@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Velvet — Curation Pipeline</title>
+  <style>
+    :root{--ink:#e9eef5;--muted:#8390a3;--panel:#111722;--line:#263143;--cyan:#55d7de;--violet:#a987ff;--green:#4ee0a0;--amber:#ffbf5b;--red:#ff667d;--bg:#090d14}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:14px Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;min-width:1050px}
+    body:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 25% -10%,#19334c99,transparent 38%),radial-gradient(circle at 90% 5%,#32225966,transparent 30%);pointer-events:none}
+    header{height:70px;padding:0 28px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);position:relative}
+    .brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:650}.mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(145deg,var(--cyan),var(--violet));display:grid;place-items:center;color:#081018;font-weight:900}
+    .live{font:11px ui-monospace,monospace;color:var(--green);letter-spacing:.1em;display:flex;gap:8px;align-items:center}.dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 10px currentColor;animation:pulse 1.6s infinite}
+    main{padding:22px 28px 32px;position:relative}.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px}
+    h1{font-size:24px;margin:0 0 5px;letter-spacing:-.03em}.sub{color:var(--muted);font-size:13px}.controls{display:flex;align-items:center;gap:9px}
+    button{border:1px solid var(--line);background:#151d29;color:var(--ink);border-radius:8px;padding:9px 13px;font-weight:600;cursor:pointer;transition:.2s}button:hover{border-color:#52647c;transform:translateY(-1px)}button.primary{background:var(--ink);color:#0b111a;border-color:var(--ink)}button.danger{color:var(--red);border-color:#5a2c37}button.recover{color:var(--green);border-color:#245742}
+    .pipeline{display:grid;grid-template-columns:1fr 55px 1fr 55px 1fr;align-items:stretch;margin-bottom:18px}.stage{background:linear-gradient(145deg,#121a26,#0f151f);border:1px solid var(--line);border-radius:12px;padding:15px 17px;min-height:115px;position:relative;overflow:hidden}.stage:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:var(--accent)}
+    .stage-head{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.stage strong{display:block;font-size:30px;margin:12px 0 2px}.stage small{color:var(--muted)}.source{--accent:var(--cyan)}.verify{--accent:var(--violet)}.deliver{--accent:var(--green)}
+    .arrow{display:grid;place-items:center;color:#536177;position:relative}.arrow:before{content:"";width:35px;border-top:1px dashed #536177}.arrow:after{content:"›";position:absolute;right:7px;font-size:22px}.packet{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 10px var(--cyan);animation:flow 1.8s linear infinite}
+    .node{display:inline-flex;gap:6px;align-items:center;padding:4px 7px;border:1px solid var(--line);border-radius:5px;font:10px ui-monospace,monospace;color:var(--muted)}.node.ok i{background:var(--green)}.node.bad{color:var(--red);border-color:#5a2c37}.node.bad i{background:var(--red)}.node i{width:6px;height:6px;border-radius:50%}
+    .stats{display:flex;gap:20px;margin-top:10px;font:11px ui-monospace,monospace;color:var(--muted)}.stats b{color:var(--ink)}
+    .workspace{display:grid;grid-template-columns:minmax(650px,1fr) 350px;gap:18px}.panel{background:#0e141e;border:1px solid var(--line);border-radius:12px;overflow:hidden}.panel-title{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:700}.badge{font:10px ui-monospace,monospace;color:var(--muted)}
+    .clip-list{max-height:500px;overflow:auto}.clip{display:grid;grid-template-columns:30px minmax(160px,1.3fr) minmax(130px,1fr) 75px 95px 28px;gap:10px;align-items:center;padding:11px 15px;border-bottom:1px solid #1a2330;cursor:pointer;transition:.15s}.clip:hover{background:#141c28}.clip.selected{background:#172130}.num{color:#59667a;font:11px ui-monospace,monospace}.clip-name{font-weight:650;font-size:12px}.scene{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:11px}.score{font:12px ui-monospace,monospace}.score.high{color:var(--green)}.score.low{color:var(--amber)}
+    .status{font:9px ui-monospace,monospace;text-transform:uppercase;letter-spacing:.05em;border-radius:12px;padding:5px 7px;text-align:center;background:#1a2230;color:var(--muted)}.status.delivered{background:#123326;color:var(--green)}.status.rejected{background:#3b1c25;color:var(--red)}.status.retrying{background:#3b2d16;color:var(--amber)}.status.verified{background:#26203d;color:var(--violet)}
+    .chev{color:#526075}.timeline{height:500px;overflow:auto;padding:7px 15px}.event{display:grid;grid-template-columns:55px 9px 1fr;gap:8px;padding:8px 0;font:11px ui-monospace,monospace;color:var(--muted)}.event .pin{width:7px;height:7px;border-radius:50%;margin-top:3px;background:#516076;box-shadow:0 0 0 4px #17202c}.event.tool .pin{background:var(--violet)}.event.hit .pin,.event.recover .pin{background:var(--green)}.event.miss .pin{background:var(--amber)}.event.fail .pin{background:var(--red)}.event-msg{color:#bcc6d4;line-height:1.35}
+    .gate{display:flex;align-items:center;gap:10px;margin-top:10px}.gate input{accent-color:var(--violet);width:110px}.gate output{color:var(--violet);font:12px ui-monospace,monospace}
+    dialog{width:600px;background:#111823;color:var(--ink);border:1px solid #344258;border-radius:13px;padding:0;box-shadow:0 30px 80px #000a}dialog::backdrop{background:#03060abf}.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}.modal-body{padding:18px}.modal-body p{color:var(--muted);line-height:1.6}.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{padding:4px 7px;border-radius:5px;background:#1c2634;color:#aab7c8;font-size:11px}pre{background:#090e15;padding:14px;border-radius:8px;max-height:280px;overflow:auto;color:#9bdac8;font:11px/1.5 ui-monospace,monospace}
+    @keyframes flow{from{left:7px}to{left:42px}}@keyframes pulse{50%{opacity:.35}}::-webkit-scrollbar{width:7px}::-webkit-scrollbar-thumb{background:#283548;border-radius:6px}
+  </style>
+</head>
+<body>
+  <header><div class="brand"><div class="mark">V</div><span>Dataset Curation Agent</span></div><div class="live"><span class="dot"></span>LOCAL SIMULATION · NO CREDENTIALS</div></header>
+  <main>
+    <div class="top">
+      <div><h1>Source → Verify → Deliver</h1><div class="sub">Agentic compliance and spatial-quality curation for training video</div></div>
+      <div class="controls">
+        <button id="redisBtn" class="danger" onclick="act('redis')">Break Redis</button>
+        <button onclick="act('replay')">Replay cached batch</button>
+        <button onclick="act('reset')">New batch</button>
+        <button id="runBtn" class="primary" onclick="act('toggle')">Pause pipeline</button>
+      </div>
+    </div>
+    <section class="pipeline">
+      <div class="stage source"><div class="stage-head"><span>01 · Source</span><span class="node ok"><i></i>INGEST</span></div><strong id="sourceCount">10</strong><small>clip metadata records</small><div class="stats"><span>QUEUE <b id="queueCount">0</b></span><span>JSON <b>10.8 KB</b></span></div></div>
+      <div class="arrow"><span class="packet"></span></div>
+      <div class="stage verify"><div class="stage-head"><span>02 · Verify</span><span class="node ok" id="redisNode"><i></i>REDIS</span></div><strong id="verifiedCount">0</strong><small>agent decisions complete</small><div class="stats"><span>CACHE <b id="cacheSize">0</b></span><span>AVG <b id="latency">0ms</b></span></div></div>
+      <div class="arrow"><span class="packet"></span></div>
+      <div class="stage deliver"><div class="stage-head"><span>03 · Deliver</span><button class="node ok" onclick="showManifest()"><i></i>S3 MANIFEST ↗</button></div><strong id="deliveredCount">0</strong><small>approved training records</small><div class="gate"><label>QUALITY GATE</label><input id="gate" type="range" min="1" max="10" value="7"><output id="gateValue">≥ 7</output></div></div>
+    </section>
+    <section class="workspace">
+      <div class="panel"><div class="panel-title"><span>VERIFICATION QUEUE</span><span class="badge">CLICK A RECORD FOR AGENT OUTPUT</span></div><div id="clips" class="clip-list"></div></div>
+      <div class="panel"><div class="panel-title"><span>LIVE TOOL TRACE</span><span class="badge" id="eventCount">0 EVENTS</span></div><div id="events" class="timeline"></div></div>
+    </section>
+  </main>
+  <dialog id="detail"><div class="modal-head"><strong id="modalTitle">Agent output</strong><button onclick="detail.close()">×</button></div><div id="modalBody" class="modal-body"></div></dialog>
+  <script>
+    let state=null, selected=null, busy=false;
+    const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    async function getState(){state=await fetch('/api/state').then(r=>r.json());render()}
+    async function act(action, value){if(busy)return;busy=true;state=await fetch('/api/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,value})}).then(r=>r.json());busy=false;render()}
+    function render(){
+      const done=state.counts.delivered+state.counts.rejected+state.counts.verified;
+      sourceCount.textContent=state.items.length;queueCount.textContent=state.counts.queued+state.counts.retrying;verifiedCount.textContent=done;
+      deliveredCount.textContent=state.counts.delivered;cacheSize.textContent=state.cache_size;latency.textContent=state.avg_latency+'ms';
+      gate.value=state.threshold;gateValue.textContent='≥ '+state.threshold;runBtn.textContent=state.running?'Pause pipeline':'Resume pipeline';
+      redisNode.className='node '+(state.redis_up?'ok':'bad');redisNode.innerHTML='<i></i>'+(state.redis_up?'REDIS':'REDIS DOWN');
+      redisBtn.className=state.redis_up?'danger':'recover';redisBtn.textContent=state.redis_up?'Break Redis':'Restore Redis';
+      clips.innerHTML=state.items.map((x,i)=>{
+        const score=x.result?x.result.quality.score:'—', flags=x.result?(x.result.compliance.flags.join(', ')||'clean'):'pending';
+        return `<div class="clip ${selected===i?'selected':''}" onclick="showClip(${i})"><span class="num">${String(i+1).padStart(2,'0')}</span><div><div class="clip-name">${esc(x.clip.id)}</div><div class="scene">${esc(x.clip.scene)}</div></div><div class="scene">${esc(x.clip.tags.join(' · '))}</div><span class="score ${score>=state.threshold?'high':'low'}">${score}/10</span><span class="status ${x.stage}">${x.stage}</span><span class="chev">›</span></div>`
+      }).join('');
+      events.innerHTML=state.events.map(e=>`<div class="event ${e.kind}"><span>${e.at}</span><span class="pin"></span><span class="event-msg">${esc(e.message)}</span></div>`).join('');
+      eventCount.textContent=state.events.length+' EVENTS';
+    }
+    function showClip(i){selected=i;render();const x=state.items[i],r=x.result;modalTitle.textContent=x.clip.id;
+      modalBody.innerHTML=`<div class="chips">${x.clip.tags.map(t=>`<span class="chip">${esc(t)}</span>`).join('')}<span class="chip">${x.clip.duration}s</span><span class="chip">${x.clip.resolution}</span></div><p>${esc(x.clip.scene)}</p>${r?`<pre>Agent: bedrock-curator (local deterministic stub)\n\n→ compliance_check\n  passed: ${r.compliance.passed}\n  flags: ${r.compliance.flags.join(', ')||'none'}\n\n→ spatial_quality_score\n  score: ${r.quality.score}/10\n  rationale: ${r.quality.rationale}\n\nRedis TTL: 90 seconds · latency: ${x.latency}ms</pre>`:'<pre>Waiting in verification queue…</pre>'}`;detail.showModal()}
+    function showManifest(){modalTitle.textContent='s3://velvet-demo/manifests/latest.json';modalBody.innerHTML=`<pre>${esc(JSON.stringify(state.manifest,null,2))}</pre>`;detail.showModal()}
+    gate.addEventListener('input',e=>gateValue.textContent='≥ '+e.target.value);gate.addEventListener('change',e=>act('threshold',e.target.value));
+    getState();setInterval(()=>{if(state&&state.running)act('step');else getState()},1100);
+  </script>
+</body>
+</html>
